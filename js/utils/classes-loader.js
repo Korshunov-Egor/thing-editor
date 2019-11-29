@@ -259,7 +259,7 @@ function reloadClasses() { //enums all js files in src folder, detect which of t
 		
 			loadedClassesCount = 0;
 			clearClasses();
-			console.clear();
+			//console.clear();
 			console.log('%c editor: classes loading begin:', 'font-weight:bold; padding:10px; padding-right: 300px; font-size:130%; color:#040; background:#cdc;');
 		
 			enumClassProperties(DisplayObject);

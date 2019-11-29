@@ -86,7 +86,7 @@ export default class Editor {
 			}
 		}, 300);
 
-		editor.__unloadedTexture = PIXI.Texture.fromImage('img/loading-texture.png');
+		editor.__unloadedTexture = PIXI.Texture.from('img/loading-texture.png');
 	}
 
 	deselectMovieClip(o) {

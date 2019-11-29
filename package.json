@@ -34,7 +34,7 @@
     "md5-file": "^4.0.0",
     "node-fetch": "^2.1.2",
     "open": "^6.4.0",
-    "pixi-filters": "^2.6.0",
+    "pixi-filters": "^3.0.3",
     "pixi.js": "^4.7.1",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
