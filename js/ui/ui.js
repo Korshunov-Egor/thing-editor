@@ -13,6 +13,7 @@ import game from "thing-engine/js/game.js";
 import SoundsList from './sounds-list.js';
 import TexturesView from './textures-view.js';
 import Help from '../utils/help.js';
+import Lib from 'thing-engine/js/lib.js';
 
 /**
  *
@@ -117,6 +118,16 @@ class UI extends React.Component {
 			React.createElement(TexturesView),
 			editor.history.buttonsRenderer(),
 			R.btn('Project settings', editor.openProjectDescToEdit, undefined, 'menu-btn'),
+			R.btn('fix white sprite', () => {
+				editor.selection.some((o) => {
+					if(o.image === 'WHITE') {
+						editor.onObjectsPropertyChanged(o, 'scale.x', o.scale.x * 0.625);
+						editor.onObjectsPropertyChanged(o, 'scale.y', o.scale.y * 0.625);
+						editor.onObjectsPropertyChanged(o, 'pivot.x', o.pivot.x * 1.6);
+						editor.onObjectsPropertyChanged(o, 'pivot.y', o.pivot.y * 1.6);
+					}
+				});
+			}, 'F7', 'menu-btn', 118),
 			React.createElement(Help),
 
 			renderWindow('sceneTree', 'SceneTree', 'Scene tree', React.createElement(TreeView, {ref: this.sceneTreeRef}), 0, 35, 250, 460, 250, 500),
