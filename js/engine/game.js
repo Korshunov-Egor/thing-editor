@@ -202,7 +202,7 @@ class Game {
 		S = Math.min(3, S);
 		/// #if EDITOR
 		if(!document.fullscreenElement) {
-			S = Math.min(S, 1);
+			S = 1;
 		}
 		/// #endif
 
@@ -267,7 +267,7 @@ class Game {
 			game._isCanvasRotated = rotateCanvas;
 			if(rotateCanvas) {
 				stage.rotation = Math.PI / 2.0;
-				stage.x = this.H * scale;
+				stage.x = this.H;
 			} else {
 				stage.rotation = 0;
 				/// #if EDITOR
@@ -1548,146 +1548,122 @@ const pathToTextureName = (path) => {
 	return path.replace(game.resourcesPath + 'img/', '');
 };
 
-/// #if EDITOR
-let texturesLoadingScheduled;
-/// #endif
 
 function loadDynamicTextures(
 	/// #if EDITOR
 	onlyThisFiles
 	/// #endif
 ) {
+
+	assert(ResourceLoader.getLoadingCount() === 0, "Textures loading already in progress.");
+	let loader;
+	let texturesInProgress;
+	let spritesWaitingOfTextures;
 	/// #if EDITOR
-	if(texturesLoadingScheduled) {
-		return;
+	let spinnerShowed;
+
+	let currentContainerSymbol = {};
+	let currentContainer = game.currentContainer;
+	if(currentContainer) {
+		__getNodeExtendData(game.currentContainer)._currentContainerSymbol = currentContainerSymbol;
 	}
+	/// #endif
+	let texturesLocked = {};
+	let texturesSettings = game.projectDesc.loadOnDemandTextures;
 
-	for(let o of game.stage.children) {
-		o.__EDITOR_tmp_visible = o.visible;
-		o.visible = (o === game.currentFader);
-	}
+	game.stage.forAllChildren((o) => {
+		if(o instanceof Sprite || o instanceof PIXI.Mesh || o instanceof Tilemap) {
+			let image = o.image;
+			if( image && (!Lib.hasTexture(image) && texturesSettings.hasOwnProperty(image))
+				/// #if EDITOR
+				&& (!onlyThisFiles || onlyThisFiles.has(image))
+				/// #endif
+			) {
+				o.texture = 
+				/// #if EDITOR
+				editor.__unloadedTexture ||
+				/// #endif
+				Lib.getTexture('EMPTY');
 
-	texturesLoadingScheduled = setTimeout(() => {
-		for(let o of game.stage.children) {
-			if(o.hasOwnProperty('__EDITOR_tmp_visible')) {
-				o.visible = o.__EDITOR_tmp_visible;
-				delete o.__EDITOR_tmp_visible;
-			}
-		}
-		texturesLoadingScheduled = false;
-		/// #endif
-		assert(ResourceLoader.getLoadingCount() === 0, "Textures loading already in progress.");
-		let loader;
-		let texturesInProgress;
-		let spritesWaitingOfTextures;
-		/// #if EDITOR
-		let spinnerShowed;
+				if(!loader) {
+					texturesInProgress = {};
+					spritesWaitingOfTextures = [];
+					loader = new ResourceLoader();
 
-		let currentContainerSymbol = {};
-		let currentContainer = game.currentContainer;
-		if(currentContainer) {
-			__getNodeExtendData(game.currentContainer)._currentContainerSymbol = currentContainerSymbol;
-		}
-		/// #endif
-		let texturesLocked = {};
-		let texturesSettings = game.projectDesc.loadOnDemandTextures;
-
-		game.stage.forAllChildren((o) => {
-			if(o instanceof Sprite || o instanceof PIXI.Mesh || o instanceof Tilemap) {
-				let image = o.image;
-				if( image && (!Lib.hasTexture(image) && texturesSettings.hasOwnProperty(image))
 					/// #if EDITOR
-					&& (!onlyThisFiles || onlyThisFiles.has(image))
+					if(game.__EDITOR_mode) {
+						spinnerShowed = true;
+						editor.ui.modal.showSpinner();
+					}
 					/// #endif
-				) {
-					o.texture = 
-					/// #if EDITOR
-					editor.__unloadedTexture ||
-					/// #endif
-					Lib.getTexture('EMPTY');
-
-					if(!loader) {
-						texturesInProgress = {};
-						spritesWaitingOfTextures = [];
-						loader = new ResourceLoader();
-
+				}
+				if(!texturesInProgress.hasOwnProperty(image)) {
+					texturesInProgress[image] = true;
+					let fullPath = textureNameToPath(image);
+					loader.add(fullPath
 						/// #if EDITOR
-						if(game.__EDITOR_mode) {
-							spinnerShowed = true;
-							editor.ui.modal.showSpinner();
-						}
+						, fullPath + '?noCache=' + Lib.__noCacheCounter
 						/// #endif
-					}
-					if(!texturesInProgress.hasOwnProperty(image)) {
-						texturesInProgress[image] = true;
-						let fullPath = textureNameToPath(image);
-						loader.add(fullPath
-							/// #if EDITOR
-							, fullPath + '?noCache=' + Lib.__noCacheCounter
-							/// #endif
-						);
-					}
-					spritesWaitingOfTextures.push(o);
-				} else if(texturesSettings.hasOwnProperty(image)) {
-					if(!o.texture.baseTexture) { //static scene appeared with ref to destroyed texture
-						o.texture = Lib.getTexture(image);
-					}
-					texturesLocked[image] = true;
+					);
 				}
-			}
-		});
-		/// #if EDITOR
-		let unloaded = false;
-		/// #endif
-		for(let image in texturesSettings) {
-			let textureLoadingMode = texturesSettings[image];
-			if((textureLoadingMode & 4) === 0) {
-				if(!texturesLocked.hasOwnProperty(image) && Lib.hasTexture(image)) {
-					Lib._unloadTexture(image);
-					/// #if EDITOR
-					unloaded = true;
-					/// #endif
+				spritesWaitingOfTextures.push(o);
+			} else if(texturesSettings.hasOwnProperty(image)) {
+				if(!o.texture.baseTexture) { //static scene appeared with ref to destroyed texture
+					o.texture = Lib.getTexture(image);
 				}
+				texturesLocked[image] = true;
 			}
 		}
-		/// #if EDITOR
-		if(unloaded) {
-			editor.refreshTexturesViewer();
+	});
+	/// #if EDITOR
+	let unloaded = false;
+	/// #endif
+	for(let image in texturesSettings) {
+		let textureLoadingMode = texturesSettings[image];
+		if((textureLoadingMode & 4) === 0) {
+			if(!texturesLocked.hasOwnProperty(image) && Lib.hasTexture(image)) {
+				Lib._unloadTexture(image);
+				/// #if EDITOR
+				unloaded = true;
+				/// #endif
+			}
 		}
-		/// #endif
+	}
+	/// #if EDITOR
+	if(unloaded) {
+		editor.refreshTexturesViewer();
+	}
+	/// #endif
 
-		if(loader) {
-			loader.load((loader, resources) => {
-				/// #if EDITOR
-				if(spinnerShowed) {
-					editor.ui.modal.hideSpinner();
-				}
-				assert((currentContainer === game.currentContainer) && (!currentContainer || (__getNodeExtendData(game.currentContainer)._currentContainerSymbol === currentContainerSymbol)), "current container has changed during additional textures loading.");
-				/// #endif
-				for(let path in resources) {
-					let imageId = pathToTextureName(path);
-					Lib.addTexture(imageId, resources[path].texture);
-				}
-				for(let o of spritesWaitingOfTextures) {
-					let t = o.image;
-					o.image = "EMPTY";
-					o.image = t;
-					assert(o.texture, 'texture ' + t + ' was not loaded correctly');
-				}
-				/// #if EDITOR
-				editor.refreshTexturesViewer();
-				/// #endif
-			});
-		} else {
+	if(loader) {
+		loader.load((loader, resources) => {
 			/// #if EDITOR
 			if(spinnerShowed) {
 				editor.ui.modal.hideSpinner();
 			}
+			assert((currentContainer === game.currentContainer) && (!currentContainer || (__getNodeExtendData(game.currentContainer)._currentContainerSymbol === currentContainerSymbol)), "current container has changed during additional textures loading.");
 			/// #endif
+			for(let path in resources) {
+				let imageId = pathToTextureName(path);
+				Lib.addTexture(imageId, resources[path].texture);
+			}
+			for(let o of spritesWaitingOfTextures) {
+				let t = o.image;
+				o.image = "EMPTY";
+				o.image = t;
+				assert(o.texture, 'texture ' + t + ' was not loaded correctly');
+			}
+			/// #if EDITOR
+			editor.refreshTexturesViewer();
+			/// #endif
+		});
+	} else {
+		/// #if EDITOR
+		if(spinnerShowed) {
+			editor.ui.modal.hideSpinner();
 		}
-	/// #if EDITOR
-	}, 1);
-	/// #endif
+		/// #endif
+	}
 }
 
 /// #if DEBUG
