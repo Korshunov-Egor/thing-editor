@@ -10,6 +10,8 @@ const path = require('path');
 const express = require('express');
 const app = express();
 const open = require('open');
+const multer = require('multer');
+const cors = require('cors');
 
 function requireUncached(m) {
 	delete require.cache[require.resolve(m)];
@@ -24,6 +26,18 @@ const {
 
 const buildSounds = require('./scripts/build-sounds.js');
 
+var storage = multer.diskStorage({
+	destination: function(req, file, cd) { // save img to project folder
+		cd(null, fullRoot + folderGame);
+	},
+	filename: function(req, file, cd) {
+		cd(null, file.originalname);
+	}
+});
+
+var upload = multer({storage: storage});
+
+let folderGame;
 let currentGame;
 let currentGameDesc;
 let currentGameRoot;
@@ -36,6 +50,19 @@ let jsonParser = bodyParser.json({limit:1024*1024*200});
 
 //========= File System access commands ====================
 
+app.use(cors());
+
+app.post('/', upload.single('file'), function(req, res, next) {
+	var image =  req.file;
+
+	log(image);
+
+	if(!image)
+		res.sendStatus(400);
+	else
+		res.sendStatus(200);
+});
+
 app.get('/fs/projects', function (req, res) {
 	res.send(enumProjects());
 });
@@ -46,6 +73,7 @@ app.get('/fs/openProject', function (req, res) {
 		chromeConnectTimeout = null;
 	}
 	let folder = path.join(gamesRoot, req.query.dir, '/');
+	folderGame = folder + 'img'; // game project folder game
 	let descPath = path.join(folder, 'thing-project.json');
 	if(fs.existsSync(descPath)) {
 		currentGame = req.query.dir;

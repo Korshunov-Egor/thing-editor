@@ -104,6 +104,52 @@ class TexturesViewerBody extends React.Component {
 		this.state = {filter: FILTER_ALL};
 		this.refreshView = this.refreshView.bind(this);
 		this.checkForUnusedImages = this.checkForUnusedImages.bind(this);
+		this.uploadFile = {
+			type: 'file',
+			accept: 'image/*',
+			name: 'UploadImg',
+			className: 'forms',
+			id: 'input-img'
+		};
+	}
+
+	onUpload() {
+
+		let flip = document.getElementById('input-img');
+
+		flip.click();
+
+		flip.addEventListener('change', (event) => {
+
+			editor.askSceneToSaveIfNeed().then(() => {
+
+				editor.ui.status.clear();
+					
+				event.preventDefault();
+			
+				console.log(event.target.files[0]);
+			
+				const data = new FormData();
+				data.append('file', document.getElementById("input-img").files[0]);
+			
+				window.fetch('/', {
+					method: 'POST',
+					mode: 'cors',
+					body: data
+				})
+					.then(response => {
+						if(response.ok){
+							return response;
+						} else {
+							throw new Error(response.status);
+						}
+					})
+					.then(data => console.log("good upload file" + data))
+					.catch(error => {
+						console.log("Dont file Uploads" + error);
+					});
+			});
+		});
 	}
 
 	refreshView() {
@@ -241,6 +287,8 @@ class TexturesViewerBody extends React.Component {
 		return R.div(null,
 			R.btn(R.icon('reload-assets'), editor.ui.viewport.onReloadAssetsClick, 'Reload game assets', 'big-btn'),
 			R.btn(R.icon('cleanup-assets'), this.checkForUnusedImages, 'Auto-clean. Check for images unused in prefabs and scenes. It is still can be used in code or in not standard fields', 'big-btn'),
+			R.input(this.uploadFile), 
+			R.btn(R.icon('img-upload'), this.onUpload, 'Upload file', 'big-btn'),
 			R.span(null,
 				"Filter by loading mode: ",
 				React.createElement(SelectEditor, {onChange:(ev) => {
@@ -312,5 +360,5 @@ class TexturesViewerBody extends React.Component {
 			}
 		});
 	}
-}
 
+}
