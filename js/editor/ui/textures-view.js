@@ -3,6 +3,7 @@ import group from "./group.js";
 import Window from "./window.js";
 import SelectEditor from "./props-editor/select-editor.js";
 import game from "thing-editor/js/engine/game.js";
+import {upload} from "./props-editor/uploadFile.js";
 
 
 /*loading bits
@@ -129,25 +130,7 @@ class TexturesViewerBody extends React.Component {
 			
 				console.log(event.target.files[0]);
 			
-				const data = new FormData();
-				data.append('file', document.getElementById("input-img").files[0]);
-			
-				window.fetch('/', {
-					method: 'POST',
-					mode: 'cors',
-					body: data
-				})
-					.then(response => {
-						if(response.ok){
-							return response;
-						} else {
-							throw new Error(response.status);
-						}
-					})
-					.then(data => console.log("good upload file" + data))
-					.catch(error => {
-						console.log("Dont file Uploads" + error);
-					});
+				upload(event.target.files[0]);
 			});
 		});
 	}

@@ -307,6 +307,15 @@ button {
   display: none;
 }
 
+.list-view-sounds {
+  bottom: 3px;
+  top: 58px;
+  left: 3px;
+  right: 3px;
+  position: absolute;
+  overflow-y: auto;
+}
+
 .scene-tree-view-wrap {
   width: calc(100% - 37px);
   height: 100%;
@@ -1340,7 +1349,7 @@ input {
 }
 
 .sounds-search-input {
-  width: calc(100% - 225px);
+  width: calc(100% - 280px);
   outline: 2px solid red !important;
 }
 

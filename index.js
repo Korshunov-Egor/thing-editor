@@ -28,7 +28,11 @@ const buildSounds = require('./scripts/build-sounds.js');
 
 var storage = multer.diskStorage({
 	destination: function(req, file, cd) { // save img to project folder
-		cd(null, fullRoot + folderGame);
+		if(file.mimetype === 'audio/vnd.dlna.adts' || file.mimetype === 'audio/ogg' || file.mimetype === 'audio/wav'){
+			cd(null, fullRoot + folderGameSounds);
+		} else {
+			cd(null, fullRoot + folderGameImg);
+		}
 	},
 	filename: function(req, file, cd) {
 		cd(null, file.originalname);
@@ -37,7 +41,8 @@ var storage = multer.diskStorage({
 
 var upload = multer({storage: storage});
 
-let folderGame;
+let folderGameImg;
+let folderGameSounds;
 let currentGame;
 let currentGameDesc;
 let currentGameRoot;
@@ -73,7 +78,8 @@ app.get('/fs/openProject', function (req, res) {
 		chromeConnectTimeout = null;
 	}
 	let folder = path.join(gamesRoot, req.query.dir, '/');
-	folderGame = folder + 'img'; // game project folder game
+	folderGameImg = folder + 'img'; // game project folder game
+	folderGameSounds = folder + 'snd';
 	let descPath = path.join(folder, 'thing-project.json');
 	if(fs.existsSync(descPath)) {
 		currentGame = req.query.dir;

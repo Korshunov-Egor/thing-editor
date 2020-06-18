@@ -5,10 +5,11 @@ import BgMusic from "thing-editor/js/engine/components/bg-music.js";
 import game from "thing-editor/js/engine/game.js";
 import SelectEditor from "./props-editor/select-editor.js";
 import MusicFragment from "thing-editor/js/engine/utils/music-fragment.js";
+import {upload} from "./props-editor/uploadFile.js";
 
 let sounds = {};
 
-const bodyProps = {className: 'sounds-list list-view'};
+const bodyProps = {className: 'sounds-list list-view-sounds'};
 
 let labelProps = {className: 'selectable-text', title: 'Ctrl+click to copy sound`s name', onMouseDown:window.copyTextByClick};
 let soundPreloadingModes = [
@@ -42,6 +43,13 @@ export default class SoundsList extends React.Component {
 			defaultValue: filter
 		};
 		this.onSelect = this.onSelect.bind(this);
+		this.uploadSounds = {
+			type: 'file',
+			accept: 'audio/ogg, audio/wav, audio/aac',
+			name: 'uploadSounds',
+			className: 'forms',
+			id: 'input-sounds'
+		};
 	}
 
 	onSearchChange(ev) {
@@ -248,10 +256,31 @@ export default class SoundsList extends React.Component {
 					this.forceUpdate();
 					editor.ui.modal.showInfo('Bitrate changes will be applied on next assets loading.', undefined, 32041);
 				}, value:editor.projectDesc.soundDefaultBitrate, select: bitrates})) : undefined,
-				R.input(this.searchInputProps)
+				R.input(this.searchInputProps),
+				R.input(this.uploadSounds),
+				R.btn(R.icon('img-upload'), this.soundsUpload, 'Upload sounds', 'big-btn')
 			),
 			R.div(bodyProps, list)
 		);
+	}
+
+	soundsUpload() {
+		let bufer = document.getElementById('input-sounds');
+
+		bufer.click();
+
+		bufer.addEventListener('change', (ev) => {
+			editor.askSceneToSaveIfNeed().then(() => {
+
+				editor.ui.status.clear();
+				
+				ev.preventDefault();
+
+				console.log(ev.target.files[0]);
+
+				upload(ev.target.files[0]);
+			});
+		});
 	}
 }
 
